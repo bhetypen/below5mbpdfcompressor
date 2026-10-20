@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Shrinkr — PDF Compressor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" />
+  <style>
+    /* ── tokens ─────────────────────────────────────────────── */
+    :root {
+      --bg:        #0D1117;
+      --surface:   #161B22;
+      --surface2:  #1C2330;
+      --border:    #30363D;
+      --fg:        #E6EDF3;
+      --fg-muted:  #7D8590;
+      --accent:    #4F8EF7;
+      --accent-bg: rgba(79,142,247,.12);
+      --success:   #3FB950;
+      --warn:      #D29922;
+      --danger:    #F85149;
+      --radius:    12px;
+      --radius-lg: 20px;
+      color-scheme: dark;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Poppins', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    img { max-width: 100%; }
+
+    /* ── nav ─────────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13,17,23,.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 max(24px, env(safe-area-inset-left, 0px));
+    }
+
+    .nav-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--fg);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: inline-block;
+    }
+
+    .nav-badge {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--accent);
+      background: var(--accent-bg);
+      border: 1px solid rgba(79,142,247,.3);
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    /* ── hero ────────────────────────────────────────────────── */
+    .hero {
+      padding: 80px max(24px, env(safe-area-inset-left, 0px)) 64px;
+      text-align: center;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--accent);
+      background: var(--accent-bg);
+      border: 1px solid rgba(79,142,247,.25);
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 28px;
+    }
+
+    .hero h1 {
+      font-size: clamp(32px, 6vw, 56px);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--fg);
+      max-width: 680px;
+      margin: 0 auto 20px;
+      text-wrap: balance;
+    }
+
+    .hero h1 span {
+      color: var(--accent);
+    }
+
+    .hero-sub {
+      font-size: 16px;
+      color: var(--fg-muted);
+      max-width: 480px;
+      margin: 0 auto 0;
+      font-weight: 400;
+    }
+
+    /* ── tool section ────────────────────────────────────────── */
+    .tool-section {
+      padding: 0 max(24px, env(safe-area-inset-left, 0px)) 80px;
+    }
+
+    .tool-card {
+      max-width: 620px;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .tool-card-header {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tool-card-header svg {
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .tool-card-header span {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--fg);
+    }
+
+    .tool-card-body {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── drop zone ───────────────────────────────────────────── */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      background: var(--surface2);
+      padding: 44px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative;
+    }
+
+    .dropzone:hover,
+    .dropzone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    .dropzone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .dz-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--accent-bg);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      color: var(--accent);
+    }
+
+    .dropzone h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--fg);
+      margin-bottom: 6px;
+    }
+
+    .dropzone p {
+      font-size: 13px;
+      color: var(--fg-muted);
+    }
+
+    /* ── file card ───────────────────────────────────────────── */
+    .file-chip {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+    }
+
+    .file-badge {
+      width: 38px;
+      height: 38px;
+      background: rgba(248,81,73,.15);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--danger);
+      letter-spacing: .04em;
+      flex-shrink: 0;
+    }
+
+    .file-meta { flex: 1; min-width: 0; }
+
+    .file-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--fg);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-size-label {
+      font-size: 12px;
+      color: var(--fg-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--fg-muted);
+      padding: 6px;
+      border-radius: 6px;
+      line-height: 0;
+      transition: color .15s;
+      flex-shrink: 0;
+    }
+    .btn-icon:hover { color: var(--danger); }
+
+    /* ── settings ────────────────────────────────────────────── */
+    .settings {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .settings-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--fg-muted);
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .setting-info { flex: 1; min-width: 0; }
+
+    .setting-info strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--fg);
+    }
+
+    .setting-info small {
+      font-size: 11px;
+      color: var(--fg-muted);
+    }
+
+    .setting-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    input[type="range"] {
+      width: 110px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .val-chip {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-bg);
+      padding: 2px 8px;
+      border-radius: 6px;
+      min-width: 42px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    select {
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--fg);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    /* toggle */
+    .toggle { position: relative; width: 40px; height: 24px; }
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .track {
+      position: absolute;
+      inset: 0;
+      background: var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .toggle input:checked + .track { background: var(--accent); }
+    .track::after {
+      content: '';
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 18px; height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform .2s;
+    }
+    .toggle input:checked + .track::after { transform: translateX(16px); }
+
+    /* ── status ──────────────────────────────────────────────── */
+    .status {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .status.info    { background: var(--accent-bg); color: var(--accent); }
+    .status.success { background: rgba(63,185,80,.12); color: var(--success); }
+    .status.warning { background: rgba(210,153,34,.12); color: var(--warn); }
+    .status.error   { background: rgba(248,81,73,.12); color: var(--danger); }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    /* ── result ──────────────────────────────────────────────── */
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .stat-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+
+    .stat-box .label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--fg-muted);
+      margin-bottom: 6px;
+    }
+
+    .stat-box .value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--fg);
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-box .value.good   { color: var(--success); }
+    .stat-box .value.danger { color: var(--danger); }
+    .stat-box .value.accent { color: var(--accent); }
+
+    .bar-track {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width .5s cubic-bezier(.4,0,.2,1);
+    }
+
+    .bar-fill.green  { background: var(--success); }
+    .bar-fill.yellow { background: var(--warn); }
+    .bar-fill.red    { background: var(--danger); }
+    .bar-fill.blue   { background: var(--accent); }
+
+    .bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--fg-muted);
+      margin-bottom: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── buttons ─────────────────────────────────────────────── */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s, background .15s;
+      width: 100%;
+      text-decoration: none;
+    }
+    .btn:active { transform: scale(.98); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { opacity: .9; }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+    .btn-ghost {
+      background: var(--surface2);
+      color: var(--fg-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { color: var(--fg); border-color: var(--fg-muted); }
+
+    /* ── how it works ────────────────────────────────────────── */
+    .how-section {
+      padding: 0 max(24px, env(safe-area-inset-left, 0px)) 100px;
+    }
+
+    .how-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .how-inner h2 {
+      font-size: clamp(22px, 3.5vw, 32px);
+      font-weight: 700;
+      letter-spacing: -.015em;
+      color: var(--fg);
+      margin-bottom: 48px;
+      max-width: 480px;
+      text-wrap: balance;
+    }
+
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .how-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px 24px;
+    }
+
+    .how-num {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--border);
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+
+    .how-card h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--fg);
+      margin-bottom: 8px;
+    }
+
+    .how-card p {
+      font-size: 13px;
+      color: var(--fg-muted);
+      line-height: 1.65;
+    }
+
+    /* ── footer ──────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px max(24px, env(safe-area-inset-left, 0px));
+      text-align: center;
+    }
+
+    footer p {
+      font-size: 12px;
+      color: var(--fg-muted);
+    }
+
+    /* ── responsive ──────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .hero { padding: 56px 20px 48px; }
+      .tool-section, .how-section { padding-left: 20px; padding-right: 20px; }
+      .tool-card-body { padding: 20px; }
+      .how-grid { grid-template-columns: 1fr; }
+      .result-grid { grid-template-columns: 1fr 1fr; }
+      input[type="range"] { width: 80px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .spinner { animation: none; opacity: .6; }
+      .bar-fill { transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-inner">
+      <a class="logo" href="#">
+        <span class="logo-dot"></span>
+        Shrinkr
+      </a>
+      <span class="nav-badge">100% In-Browser</span>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      No uploads. No servers. Private.
+    </div>
+    <h1>Compress any PDF<br>under <span>5 MB</span></h1>
+    <p class="hero-sub">Drop your file and get a smaller PDF in seconds — everything runs in your browser, nothing leaves your device.</p>
+  </section>
+
+  <!-- TOOL -->
+  <section class="tool-section">
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="18" x2="12" y2="12"/>
+          <line x1="9" y1="15" x2="15" y2="15"/>
+        </svg>
+        <span>PDF Compressor</span>
+      </div>
+
+      <div class="tool-card-body" id="app-root">
+        <!-- React mounts here -->
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how-section">
+    <div class="how-inner">
+      <p class="section-label">How it works</p>
+      <h2>Three steps to a smaller PDF</h2>
+      <div class="how-grid">
+        <div class="how-card">
+          <div class="how-num">01</div>
+          <h3>Drop your file</h3>
+          <p>Select any PDF from your device. The file is read locally — it never leaves your browser.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-num">02</div>
+          <h3>Tune the settings</h3>
+          <p>Adjust image quality and maximum dimensions. Lower quality means smaller size. Strip metadata for extra savings.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-num">03</div>
+          <h3>Download instantly</h3>
+          <p>Click Compress, see the before and after, then save your smaller PDF directly to your device.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>Shrinkr — PDF compression runs entirely in your browser using pdf-lib. No data is sent to any server.</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+
+  <script>
+    const { useState, useRef, useCallback } = React;
+    const { PDFDocument, PDFName, PDFNumber } = PDFLib;
+
+    function fmtBytes(b) {
+      if (b < 1024) return b + ' B';
+      if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+      return (b/1048576).toFixed(2) + ' MB';
+    }
+    function fmtMB(b) { return (b/1048576).toFixed(2) + ' MB'; }
+    function savings(orig, comp) { return orig ? Math.max(0, (orig-comp)/orig*100) : 0; }
+
+    function downscaleImage(dataUrl, mimeType, quality, maxDim) {
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.naturalWidth, h = img.naturalHeight;
+          if (w > maxDim || h > maxDim) {
+            const r = Math.min(maxDim/w, maxDim/h);
+            w = Math.round(w*r); h = Math.round(h*r);
+          }
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(c.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
+
+    function b64toBytes(b) {
+      const s = atob(b); const a = new Uint8Array(s.length);
+      for (let i=0;i<s.length;i++) a[i]=s.charCodeAt(i); return a;
+    }
+    function bytesToB64(a) {
+      let s=''; for(let i=0;i<a.length;i++) s+=String.fromCharCode(a[i]);
+      return btoa(s);
+    }
+
+    async function compressPDF(buf, { imageQuality, maxImageDim, removeMetadata }) {
+      const doc = await PDFDocument.load(buf, { ignoreEncryption: true });
+      if (removeMetadata) {
+        doc.setTitle(''); doc.setAuthor(''); doc.setSubject('');
+        doc.setKeywords([]); doc.setProducer(''); doc.setCreator('');
+      }
+      const seen = new Set();
+      for (const page of doc.getPages()) {
+        let res; try { res = page.node.Resources(); } catch { continue; }
+        if (!res) continue;
+        let xmap; try { xmap = res.XObject(); } catch { continue; }
+        if (!xmap) continue;
+        const keys = xmap.keys ? xmap.keys() : [];
+        for (const key of keys) {
+          let xo; try { xo = xmap.lookup(key); } catch { continue; }
+          if (!xo || seen.has(xo.ref)) continue;
+          let sub; try { sub = xo.get(PDFName.of('Subtype')); } catch { continue; }
+          if (!sub || sub.toString() !== '/Image') continue;
+          let filter; try { filter = xo.get(PDFName.of('Filter')); } catch {}
+          const isJpeg = filter && filter.toString().includes('DCTDecode');
+          if (!isJpeg) continue;
+          let bytes; try { bytes = xo.getContents(); } catch { continue; }
+          if (!bytes || bytes.length < 100) continue;
+          seen.add(xo);
+          try {
+            const compressed = await downscaleImage(
+              'data:image/jpeg;base64,' + bytesToB64(bytes),
+              'image/jpeg', imageQuality, maxImageDim
+            );
+            const nb = b64toBytes(compressed.split(',')[1]);
+            if (nb.length < bytes.length * 0.98) {
+              xo.setContents(nb);
+              xo.set(PDFName.of('Filter'), PDFName.of('DCTDecode'));
+              try { xo.delete(PDFName.of('DecodeParms')); } catch {}
+            }
+          } catch {}
+        }
+      }
+      return doc.save({ useObjectStreams: true, addDefaultPage: false });
+    }
+
+    // ── Component ────────────────────────────────────────────────
+    function App() {
+      const [file, setFile] = useState(null);
+      const [drag, setDrag]   = useState(false);
+      const [quality, setQuality] = useState(0.65);
+      const [maxDim, setMaxDim]   = useState(1600);
+      const [stripMeta, setStripMeta] = useState(true);
+      const [status, setStatus]   = useState(null);
+      const [busy, setBusy]       = useState(false);
+      const [result, setResult]   = useState(null);
+      const inputRef = useRef();
+      const TARGET = 5 * 1024 * 1024;
+
+      const pickFile = useCallback(f => {
+        if (!f || f.type !== 'application/pdf') {
+          setStatus({ type: 'error', msg: 'Please select a valid PDF file.' }); return;
+        }
+        setFile(f); setResult(null); setStatus(null);
+      }, []);
+
+      const onDrop = useCallback(e => {
+        e.preventDefault(); setDrag(false);
+        pickFile(e.dataTransfer.files[0]);
+      }, [pickFile]);
+
+      const compress = useCallback(async () => {
+        if (!file) return;
+        setBusy(true); setStatus({ type: 'info', msg: 'Analyzing and compressing images…' }); setResult(null);
+        try {
+          const buf = await file.arrayBuffer();
+          const out = await compressPDF(buf, { imageQuality: quality, maxImageDim: maxDim, removeMetadata: stripMeta });
+          setResult({ bytes: out, size: out.length });
+          if (out.length <= TARGET)
+            setStatus({ type: 'success', msg: `Done! Compressed to ${fmtMB(out.length)} — under 5 MB.` });
+          else
+            setStatus({ type: 'warning', msg: `Compressed to ${fmtMB(out.length)}. Still over 5 MB — try lowering quality or the PDF has minimal image content.` });
+        } catch (e) {
+          setStatus({ type: 'error', msg: 'Compression failed: ' + e.message });
+        } finally { setBusy(false); }
+      }, [file, quality, maxDim, stripMeta]);
+
+      const save = useCallback(async () => {
+        if (!result) return;
+        const blob = new Blob([result.bytes], { type: 'application/pdf' });
+        const base = file.name.replace(/\.pdf$/i, '');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = base + '_compressed.pdf';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+      }, [result, file]);
+
+      const reset = () => {
+        setFile(null); setResult(null); setStatus(null);
+        if (inputRef.current) inputRef.current.value = '';
+      };
+
+      const pct = result ? Math.min(100, (result.size / TARGET) * 100) : 0;
+      const barCol = result ? (result.size <= TARGET ? 'green' : result.size <= TARGET*1.5 ? 'yellow' : 'red') : 'blue';
+
+      return React.createElement(React.Fragment, null,
+
+        // Drop zone
+        !file && React.createElement('div', {
+          className: `dropzone${drag ? ' drag-over' : ''}`,
+          onDragOver: e => { e.preventDefault(); setDrag(true); },
+          onDragLeave: () => setDrag(false),
+          onDrop
+        },
+          React.createElement('input', { ref: inputRef, type: 'file', accept: '.pdf,application/pdf', onChange: e => pickFile(e.target.files[0]) }),
+          React.createElement('div', { className: 'dz-icon' },
+            React.createElement('svg', { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+              React.createElement('path', { d: 'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4' }),
+              React.createElement('polyline', { points: '17 8 12 3 7 8' }),
+              React.createElement('line', { x1: 12, y1: 3, x2: 12, y2: 15 })
+            )
+          ),
+          React.createElement('h3', null, 'Drop your PDF here'),
+          React.createElement('p', null, 'or click to browse — any size, stays on your device')
+        ),
+
+        // File chip
+        file && React.createElement('div', { className: 'file-chip' },
+          React.createElement('div', { className: 'file-badge' }, 'PDF'),
+          React.createElement('div', { className: 'file-meta' },
+            React.createElement('div', { className: 'file-name' }, file.name),
+            React.createElement('div', { className: 'file-size-label' }, fmtBytes(file.size))
+          ),
+          React.createElement('button', { className: 'btn-icon', onClick: reset, title: 'Remove' },
+            React.createElement('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
+              React.createElement('path', { d: 'M18 6L6 18M6 6l12 12' })
+            )
+          )
+        ),
+
+        // Settings
+        file && React.createElement('div', { className: 'settings' },
+          React.createElement('p', { className: 'settings-title' }, 'Settings'),
+
+          React.createElement('div', { className: 'setting-row' },
+            React.createElement('div', { className: 'setting-info' },
+              React.createElement('strong', null, 'Image quality'),
+              React.createElement('small', null, 'Lower = smaller file size')
+            ),
+            React.createElement('div', { className: 'setting-controls' },
+              React.createElement('input', { type: 'range', min: 0.1, max: 0.95, step: 0.05, value: quality, onChange: e => setQuality(parseFloat(e.target.value)) }),
+              React.createElement('span', { className: 'val-chip' }, Math.round(quality*100) + '%')
+            )
+          ),
+
+          React.createElement('div', { className: 'setting-row' },
+            React.createElement('div', { className: 'setting-info' },
+              React.createElement('strong', null, 'Max image size'),
+              React.createElement('small', null, 'Cap image width and height')
+            ),
+            React.createElement('select', { value: maxDim, onChange: e => setMaxDim(parseInt(e.target.value)) },
+              React.createElement('option', { value: 800 }, '800 px'),
+              React.createElement('option', { value: 1200 }, '1200 px'),
+              React.createElement('option', { value: 1600 }, '1600 px'),
+              React.createElement('option', { value: 2400 }, '2400 px')
+            )
+          ),
+
+          React.createElement('div', { className: 'setting-row' },
+            React.createElement('div', { className: 'setting-info' },
+              React.createElement('strong', null, 'Strip metadata'),
+              React.createElement('small', null, 'Remove author, title, keywords')
+            ),
+            React.createElement('label', { className: 'toggle' },
+              React.createElement('input', { type: 'checkbox', checked: stripMeta, onChange: e => setStripMeta(e.target.checked) }),
+              React.createElement('span', { className: 'track' })
+            )
+          )
+        ),
+
+        // Status
+        status && React.createElement('div', { className: `status ${status.type}` },
+          busy && React.createElement('span', { className: 'spinner' }),
+          React.createElement('span', null, status.msg)
+        ),
+
+        // Result
+        result && React.createElement(React.Fragment, null,
+          React.createElement('div', { className: 'result-grid' },
+            React.createElement('div', { className: 'stat-box' },
+              React.createElement('div', { className: 'label' }, 'Original'),
+              React.createElement('div', { className: 'value' }, fmtMB(file.size))
+            ),
+            React.createElement('div', { className: 'stat-box' },
+              React.createElement('div', { className: 'label' }, 'Compressed'),
+              React.createElement('div', { className: `value ${result.size <= TARGET ? 'good' : 'danger'}` }, fmtMB(result.size))
+            ),
+            React.createElement('div', { className: 'stat-box' },
+              React.createElement('div', { className: 'label' }, 'Saved'),
+              React.createElement('div', { className: 'value accent' }, savings(file.size, result.size).toFixed(1) + '%')
+            )
+          ),
+          React.createElement('div', null,
+            React.createElement('div', { className: 'bar-labels' },
+              React.createElement('span', null, '0 MB'),
+              React.createElement('span', null, '5 MB target'),
+              React.createElement('span', null, fmtMB(Math.max(file.size, result.size)))
+            ),
+            React.createElement('div', { className: 'bar-track' },
+              React.createElement('div', { className: `bar-fill ${barCol}`, style: { width: pct + '%' } })
+            )
+          )
+        ),
+
+        // Primary action
+        file && !result && React.createElement('button', {
+          className: 'btn btn-primary',
+          onClick: compress,
+          disabled: busy
+        }, busy ? 'Compressing…' : 'Compress PDF'),
+
+        // Post-result actions
+        result && React.createElement(React.Fragment, null,
+          React.createElement('button', { className: 'btn btn-primary', onClick: save }, 'Save compressed PDF'),
+          React.createElement('button', { className: 'btn btn-ghost', onClick: compress, disabled: busy }, 'Try different settings')
+        )
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('app-root')).render(React.createElement(App));
+  </script>
+</body>
+</html>
